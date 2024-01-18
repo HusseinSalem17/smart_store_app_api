@@ -329,6 +329,5 @@ def updateaddress(request):
         except:
             return Response("Invalid Pincode", status=400)
 
-        return Response(pincode_response)
     else:
         return Response("data_missing", status=400)
