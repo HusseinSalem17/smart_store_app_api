@@ -18,8 +18,47 @@ from backend.models import (
 # Register your models here.
 @register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ("id", "email", "phone", "fullname", "created_at")
-    readonly_fields = ("password",)
+    list_display = (
+        "id",
+        "email",
+        "phone",
+        "fullname",
+        "address",
+        "pincode",
+        "created_at",
+    )
+    fieldsets = (
+        (
+            "Personal Info",
+            {
+                "fields": (
+                    "email",
+                    "phone",
+                    "fullname",
+                    "password",
+                )
+            },
+        ),
+        (
+            "Address",
+            {
+                "fields": (
+                    "name",
+                    "address",
+                    "contact_no",
+                    "pincode",
+                    "district",
+                    "state",
+                )
+            },
+        ),
+    )
+    readonly_fields = (
+        "password",
+        "state",
+        "district",
+        "pincode",
+    )
 
 
 @register(Otp)

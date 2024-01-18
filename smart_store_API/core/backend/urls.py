@@ -1,5 +1,10 @@
 from django.urls import path
 from backend.views import (
+    cart,
+    updateaddress,
+    wishlist,
+    update_cart,
+    update_wishlist,
     categories,
     create_account,
     login,
@@ -7,6 +12,7 @@ from backend.views import (
     password_reset_confirm,
     password_reset_email,
     password_reset_form,
+    product_details,
     request_otp,
     resend_otp,
     slides,
@@ -34,4 +40,10 @@ urlpatterns = [
     path("categories/", categories, name="categories"),
     path("slides/", slides, name="slides"),
     path("pageitems/", pageItems),
+    path("productdetails/", product_details),
+    path("updatewishlist/", update_wishlist),
+    path("updatecart/", update_cart),
+    path("wishlist/", wishlist),
+    path("cart/", cart),
+    path("updateaddress/", updateaddress),
 ]

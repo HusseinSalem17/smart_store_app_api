@@ -1,6 +1,7 @@
 import datetime
 from django.shortcuts import HttpResponse
 from django.shortcuts import get_object_or_404, render
+import requests
 from rest_framework.response import Response
 
 from backend.models import *
@@ -18,11 +19,16 @@ from django.template.loader import get_template
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import LimitOffsetPagination
 
+
 from backend.serializers import (
+    AddressSerializer,
+    CartSerializar,
     CategorySerializer,
     PageItemSerializer,
+    ProductSerializer,
     SlideSerializer,
     UserSerializer,
+    WishListSerializer,
 )
 
 
@@ -225,3 +231,104 @@ def pageItems(request):
     queryset = pagination.paginate_queryset(page_items, request)
     data = PageItemSerializer(queryset, many=True).data
     return pagination.get_paginated_response(data)
+
+
+@api_view(["GET"])
+def product_details(request):
+    productId = request.GET.get("productId")
+    product = get_object_or_404(Product, id=productId)
+    data = ProductSerializer(product, many=False).data
+    return Response(data)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticatedUser])
+def update_wishlist(request):
+    id = request.GET.get("id")
+    action = request.GET.get("action")
+    user = request.user
+
+    if action == "ADD":
+        user.wishlist.add(id)
+        user.save()
+        return Response("Added to wishlist")
+    elif action == "REMOVE":
+        user.wishlist.remove(id)
+        user.save()
+        return Response("Removed from wishlist")
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticatedUser])
+def update_cart(request):
+    id = request.GET.get("id")
+    action = request.GET.get("action")
+    user = request.user
+
+    if action == "ADD":
+        user.cart.add(id)
+        user.save()
+        return Response("Added to Cart")
+    elif action == "REMOVE":
+        user.cart.remove(id)
+        user.save()
+        return Response("Removed from Cart")
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticatedUser])
+def wishlist(request):
+    _wishlist = request.user.wishlist.all()
+    data = WishListSerializer(_wishlist, many=True).data
+    return Response(data)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticatedUser])
+def cart(request):
+    id = request.GET.get("id")
+    data = []
+    if id:
+        # load all cart items
+        products = ProductOption.objects.filter(id=id)
+        data = CartSerializar(products, many=True).data
+    else:
+        # load all cart items
+        products = request.user.cart.all()
+        data = CartSerializar(products, many=True).data
+    return Response(data)
+
+
+@api_view(["POST"])
+# @permission_classes([IsAuthenticatedUser])
+def updateaddress(request):
+    name = request.data.get("name")
+    address = request.data.get("address")
+    pincode = request.data.get("pincode")
+    contact_no = request.data.get("contact_no")
+
+    if name and address and pincode and contact_no:
+        try:
+            pincode_response = requests.get(
+                "https://api.postalpincode.in/pincode/" + str(pincode)
+            ).json()
+            if pincode_response[0]["Status"] == "Success":
+                district = pincode_response[0]["PostOffice"][0]["District"]
+                state = pincode_response[0]["PostOffice"][0]["State"]
+                user = request.user
+                user.name = name
+                user.address = address
+                user.pincode = pincode
+                user.contact_no = contact_no
+                user.district = district
+                user.state = state
+                user.save()
+                return Response(AddressSerializer(user, many=False).data)
+            else:
+                return Response("Invalid Pincode", status=400)
+        except:
+            return Response("Invalid Pincode", status=400)
+
+        return Response(pincode_response)
+    else:
+        return Response("data_missing", status=400)
